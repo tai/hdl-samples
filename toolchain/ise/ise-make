@@ -1,0 +1,205 @@
+#!/usr/bin/env xtclsh
+
+proc format_help {} {
+  set p [file tail [info script]]
+  set message "
+$p - Build ISE project
+Usage: $p <cmd> \[options] \[args...]
+Options:
+  -p, --proj <NAME>: Set project name
+  -t, --top <NAME> : Set top module name
+Example:
+  // build/rebuild
+  $ $p build -p proj -t main *.ucf *.v *.tcl
+  // re-run each stage
+  $ $p run syn
+  $ $p run trans
+  $ $p run map
+  $ $p run route
+  $ $p run impl
+  $ $p run gen
+"
+  return [string trim $message]
+}
+
+proc main {} {
+  array set opt [eval parse_args $::argv]
+
+  if {[info exists opt(help)] || [info exists opt(err)]} {
+    show_help
+    exit 0
+  }
+
+  set cmd [lindex $opt(args) 0]
+  if {$cmd eq ""} {
+    show_help
+    exit 0
+  }
+
+  if {! [info exists opt(proj)]} {
+    set fn [lindex [glob "*.xise"] 0]
+    set pos [expr [string length $fn] - 6]
+    set opt(proj) [string range $fn 0 $pos]
+  }
+
+  $cmd opt
+}
+
+######################################################################
+# helper functions
+######################################################################
+
+proc show_help {} {
+  puts stderr [format_help]
+}
+
+proc parse_args {args} {
+  array set opt {src {} hook {} args {} top "top" udpate 0}
+
+  set n [llength $args]
+  for {set i 0} {$i < $n} {incr i} {
+    set arg [lindex $args $i]
+
+    switch -regexp -- $arg {
+      "^(-h|--help)$" { set opt(help) 1 }
+      "^(-t|--top)$"  { incr i; set opt(top) [lindex $args $i] }
+      "^(-p|--proj)$" { incr i; set opt(proj) [lindex $args $i] }
+      "^-"        { set opt(err) 1; puts stderr "Unknown arg: $arg" }
+      "\.ucf$"    { set opt(ucf) $arg }
+      "\.tcl$"    { lappend opt(hook) $arg }
+      "\.v$"      { lappend opt(src) $arg }
+      default     { lappend opt(args) $arg }
+    }
+  }
+  return [array get opt]
+}
+
+proc log {msg} {
+  puts stderr $msg
+}
+
+# helper proc for run_process
+proc run_task {task} {
+  log "Running: $task"
+
+  # allow shorthand
+  switch -glob -- [string tolower $task] {
+    "syn*"  { set task "Synthesize" }
+    "tr*"   { set task "Translate" }
+    "map"   { set task "Map" }
+    "pr"    { set task "Place & Route" }
+    "place" { set task "Place & Route" }
+    "route" { set task "Place & Route" }
+    "im*"   { set task "Implement Design" }
+    "gen*"  { set task "Generate Programming File" }
+  }
+
+  set result [process run "$task"]
+  if {! $result} {
+    return false
+  }
+
+  set status [process get "$task" status ]
+  if {$status != "up_to_date" && $status != "warnings"} {
+    return false
+  }
+
+  return true
+}
+
+proc setup {optname} {
+  upvar $optname opt
+
+  log "Configuring project..."
+
+  # set defaults
+  project set family "Spartan3E"
+  project set device "xc3s500e"
+  project set package "fg320"
+  project set speed "-4"
+  project set top_level_module_type "HDL"
+  project set synthesis_tool "XST (VHDL/Verilog)"
+  project set simulator "ISim (VHDL/Verilog)"
+  project set "Preferred Language" "Verilog"
+  project set "Enable Message Filtering" "false"
+
+  # user constraints
+  if {[info exists opt(ucf)]} {
+    xfile remove [file tail $opt(ucf)]
+    xfile add $opt(ucf)
+    project set "Target UCF File Name" $opt(ucf) \
+      -process "Back-annotate Pin Locations"
+  }
+
+  log "Adding source files..."
+  xfile add $opt(src)
+
+  # load extra hooks
+  foreach hook $opt(hook) {
+    if {[catch {source $hook} err]} {
+      log $::errorInfo
+      exit 1
+    }
+  }
+}
+
+######################################################################
+# supported commands
+######################################################################
+
+proc clean {optname} {
+  upvar $optname opt
+
+  set proj $opt(proj)
+  foreach ext {ise xise gise} {
+    file delete "$proj.$ext"
+  }
+}
+
+proc run {optname} {
+  upvar $optname opt
+
+  set proj $opt(proj)
+  set task [lindex $opt(args) 1]
+
+  project open $proj
+  run_task $task
+  project close
+}
+
+proc build {optname} {
+  upvar $optname opt
+
+  set proj $opt(proj)
+  if {[file exists "$proj.xise"]} {
+    project open $proj
+    setup opt
+    project save
+  } else {
+    project new $proj
+    setup opt
+    project save
+  }
+
+  # top module name
+  project set top $opt(top)
+
+  run_task "implement"
+  run_task "generate"
+
+  project save
+  project close
+}
+
+######################################################################
+# 
+######################################################################
+
+if {$tcl_interactive} {
+   show_help
+} else {
+   if {[catch {main} err]} {
+      log $::errorInfo
+   }
+}
+

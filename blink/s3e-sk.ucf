@@ -1,0 +1,6 @@
+# Minimal UCF needed for the design
+# - https://www.xilinx.com/support/answers/34815.html
+
+NET "rst" LOC = "K17" | IOSTANDARD = LVTTL | PULLDOWN ;
+NET "clk" LOC = "C9"  | IOSTANDARD = LVCMOS33 ;
+NET "led" LOC = "F9" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;

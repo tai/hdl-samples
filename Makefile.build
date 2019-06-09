@@ -1,0 +1,10 @@
+TOP := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
+TARGET = blink
+BOARD = s3e-sk
+TOOLCHAIN = ise
+
+SRCS = $(wildcard $(TOP)/$(TARGET)/*.v)
+
+-include $(TOP)/board/$(BOARD)/board.mk
+include $(TOP)/toolchain/$(TOOLCHAIN)/toolchain.mk
