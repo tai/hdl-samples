@@ -2,22 +2,22 @@
 `default_nettype none
 
 module blink #(
-   parameter INIT=1,
-   parameter CDIV=50_000_000
+   parameter CDIV = 50_000_000
 )(
-   input clk,
-   input rst,
+   input wire clk,
+   input wire rst,
    output reg led
 );
    reg [31:0] counter;
-
+   
    always @(posedge clk or posedge rst) begin
       if (rst) begin
+         led <= 0;
          counter <= 0;
-         led <= INIT;
       end
       else begin
          counter <= counter + 1;
+         
          if (counter == CDIV - 1) begin
             counter <= 0;
             led <= ~led;

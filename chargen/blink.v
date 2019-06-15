@@ -28,7 +28,7 @@ module blink(
    reg [31:0] cnt_reg;
    assign led = out_reg;
    
-   always @(negedge clk or posedge rst) begin
+   always @(posedge clk or posedge rst) begin
       if (rst) begin
          out_reg <= 0;
          cnt_reg <= 0;

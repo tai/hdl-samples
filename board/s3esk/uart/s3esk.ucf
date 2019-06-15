@@ -1,0 +1,10 @@
+NET "led" LOC = "F9" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "clk" LOC = "C9"  | IOSTANDARD = LVCMOS33 ;
+NET "rst" LOC = "K17" | IOSTANDARD = LVTTL | PULLDOWN ;
+
+# ==== 6-pin header J4 ====
+#NET "J4<0>"  LOC = "D7" | IOSTANDARD = LVTTL  | SLEW = SLOW  | DRIVE = 6 ; 
+#NET "J4<1>"  LOC = "C7" | IOSTANDARD = LVTTL  | SLEW = SLOW  | DRIVE = 6 ; 
+#NET "J4<2>"  LOC = "F8" | IOSTANDARD = LVTTL  | SLEW = SLOW  | DRIVE = 6 ; 
+#NET "J4<3>"  LOC = "E8" | IOSTANDARD = LVTTL  | SLEW = SLOW  | DRIVE = 6 ; 
+NET "tx"  LOC = "E8" | IOSTANDARD = LVTTL  | SLEW = SLOW  | DRIVE = 6 ; 

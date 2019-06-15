@@ -1,0 +1,118 @@
+#!/usr/bin/env quartus_sh -f
+
+proc format_help {} {
+  set p [file tail [info script]]
+  set message "
+$p - Build with Quartus toolchain
+Usage: $p \[options] \[files...]
+Options:
+  -p, --proj <NAME>: Set project name
+  -t, --top <NAME> : Set top module name
+Example:
+  $ $p -p proj -t main *.v *.tcl
+"
+  return [string trim $message]
+}
+
+proc main {} {
+  array set opt [eval parse_args $::argv]
+
+  if {[info exists opt(help)] || [info exists opt(err)]} {
+    show_help
+    exit 0
+  }
+
+  if {[llength $opt(src)] == 0} {
+    show_help
+    exit 0
+  }
+
+  build opt
+}
+
+######################################################################
+# helper functions
+######################################################################
+
+proc show_help {} {
+  puts stderr [format_help]
+}
+
+proc parse_args {args} {
+  array set opt {src {} hook {} args {} top "top" udpate 0}
+
+  set n [llength $args]
+  for {set i 0} {$i < $n} {incr i} {
+    set arg [lindex $args $i]
+
+    switch -regexp -- $arg {
+      "^(-h|--help)$" { set opt(help) 1 }
+      "^(-t|--top)$"  { incr i; set opt(top) [lindex $args $i] }
+      "^(-p|--proj)$" { incr i; set opt(proj) [lindex $args $i] }
+      "^-"        { set opt(err) 1; puts stderr "Unknown arg: $arg" }
+      "\.ucf$"    { set opt(ucf) $arg }
+      "\.tcl$"    { lappend opt(hook) $arg }
+      "\.v$"      { lappend opt(src) $arg }
+      default     { lappend opt(args) $arg }
+    }
+  }
+  return [array get opt]
+}
+
+proc log {msg} {
+  puts stderr $msg
+}
+
+######################################################################
+# supported commands
+######################################################################
+
+proc setup {optname} {
+  upvar $optname opt
+
+  log "Adding source files..."
+  foreach src $opt(src) {
+    set_global_assignment -name VERILOG_FILE $src
+  }
+  set_global_assignment -name TOP_LEVEL_ENTITY $opt(top)
+
+  log "Configuring project..."
+  set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+  set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+  set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+
+  set_global_assignment -name NUM_PARALLEL_PROCESSORS 4
+
+  set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+
+  log "Loading external hooks..."
+  foreach hook $opt(hook) {
+    if {[catch {source $hook} err]} {
+      log $::errorInfo
+      exit 1
+    }
+  }
+}
+
+proc build {optname} {
+  upvar $optname opt
+
+  set proj $opt(proj)
+
+  project_new -overwrite -revision $proj $proj
+  setup opt
+
+  project_close
+}
+
+######################################################################
+#
+######################################################################
+
+if {$tcl_interactive} {
+   show_help
+} else {
+   if {[catch {main} err]} {
+      log $::errorInfo
+   }
+}

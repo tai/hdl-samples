@@ -1,0 +1,49 @@
+#!/bin/bash
+
+usage() {
+  local p="altera"
+  cat <<EOF >&2
+$p - Run ALTERA tools
+Usage: $p cmd args...
+Usage: $p-<ver> cmd args...
+Example:
+  $ $p quartus_sh
+  $ $p-18.0 qurtus_sh
+EOF
+  exit 0
+}
+
+find-version() {
+  local cmd=$1
+  local ver=${ALTERA_VER:=18.0}
+
+  case "$0" in
+  */altera-*) ver=${0##*altera-};;
+  esac
+  echo $ver
+}
+
+run() {
+  local cmd=$1
+  local ver=$(find-version $cmd)
+
+  for i in /opt/altera/$ver/*/bin; do
+    PATH=$i:$PATH
+  done
+
+  if [ "$cmd" = "sh" ]; then
+    exec bash --rcfile <(
+cat ~/.bashrc;
+cat <<EOF
+unset TMPDIR
+PS1='a-$ver:\w
+$ '
+EOF
+)
+  else
+    exec "$@"
+  fi
+}
+
+test $# -gt 0 || usage
+run "$@"

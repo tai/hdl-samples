@@ -1,0 +1,46 @@
+######################################################################
+# Makefile for Icarus Verilog (iverilog)
+######################################################################
+
+TOPDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
+# defaults
+APP = blink
+TOP = top
+
+# where to find sources
+VPATH = $(TOPDIR)/$(APP)
+
+# sources
+SRCS_ALL = $(notdir $(wildcard $(TOPDIR)/$(APP)/*.v))
+SRCS_TB  = $(notdir $(wildcard $(TOPDIR)/$(APP)/*_tb.v))
+SRCS     = $(filter-out $(SRCS_TB),$(SRCS_ALL))
+
+# testbenches
+TB = $(SRCS_TB:.v=)
+
+# verilog code compiler (Xilinx ISE supports Verilog2001, but not SV)
+VFLAGS = -DCLOCK=50_000_000
+VCC = iverilog -g2001 -Wall -Wtimescale -I$(TOPDIR)/common $(VFLAGS)
+
+######################################################################
+
+all: compile
+
+compile: $(TOP) $(TB)
+
+program: compile
+	@echo "Not available for simulation"
+
+# build and run all binaries
+test: $(TB)
+	for i in $(TB); do ./$$i | sed -e 's/\x0/_/g'; done | \
+	awk 'BEGIN{rc=0} {print} /^NG:/{rc=1} END{exit(rc)}'
+
+# each binary depends on its source and depending module source files
+%: %.v $(SRCS)
+	$(VCC) -s $@ -o $@ $^
+
+# check macro-expanded result
+%.E: %.v
+	$(VCC) -E -s $@ -o $@ $^

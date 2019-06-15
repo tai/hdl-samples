@@ -1,0 +1,68 @@
+#!/bin/bash
+
+usage() {
+  local p="xilinx"
+  cat <<EOF >&2
+$p - Run XILINX tools
+Usage: $p cmd args...
+Usage: $p-<ver> cmd args...
+Example:
+  $ $p xtclsh
+  $ $p-14.7 xtclsh
+EOF
+  exit 0
+}
+
+find-version() {
+  local cmd=$1
+  local ver=${XILINX_VER:=14.7}
+
+  case "$0" in
+  */xilinx-*) ver=${0##*xilinx-};;
+  esac
+  echo $ver
+}
+
+find-config() {
+  local ver=$1
+
+  local dirs
+  dirs="/opt/xilinx/Vivado/$ver"
+  dirs="$dirs /opt/xilinx/$ver/ISE_DS"
+  dirs="$dirs /opt/xilinx/$ver"
+
+  for base in $dirs; do
+    for conf in settings64.sh settings32.sh settings.sh; do
+      if [ -r $base/$conf ]; then
+        echo $base/$conf
+        return
+      fi
+    done
+  done
+}
+
+run() {
+  local cmd=$1
+  local run="$@"
+  local ver=$(find-version $cmd)
+  local cfg=$(find-config $ver)
+
+  if [ "$cmd" = "sh" ]; then
+    exec bash --rcfile <(
+cat ~/.bashrc;
+cat <<EOF
+unset TMPDIR
+PS1='x-$ver:\w
+$ '
+. $cfg
+EOF
+)
+  else
+    # NOTE: Upon loading XILINX shell config, "$@" needs to be empty
+    set --; . $cfg
+    exec $run
+  fi
+}
+
+test $# -gt 0 || usage
+run "$@"

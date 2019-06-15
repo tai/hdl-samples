@@ -1,0 +1,51 @@
+######################################################################
+# Makefile for XILINX ISE
+######################################################################
+
+TOPDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
+APP = blink
+TOP = top
+BOARD = s3esk
+
+# src (testbench and synthesizable code)
+SRCS_ALL = $(wildcard $(TOPDIR)/$(APP)/*.v)
+SRCS_TB  = $(wildcard $(TOPDIR)/$(APP)/*_tb.v)
+SRCS     = $(filter-out $(SRCS_TB),$(SRCS_ALL))
+
+######################################################################
+
+DISPLAY = 
+export DISPLAY
+
+LANG = en_US.UTF-8
+export LANG
+
+UCF = $(TOPDIR)/board/$(BOARD)/$(APP)/$(BOARD).ucf
+TCL = \
+  $(wildcard $(TOPDIR)/board/$(BOARD)/config/*.tcl) \
+  $(wildcard $(TOPDIR)/board/$(BOARD)/$(APP)/config/*.tcl)
+
+XMAKE = xilinx xtclsh $(TOPDIR)/bin/ise-make
+IMPACT = xilinx impact
+
+LD_PRELOAD = /opt/xilinx/usb-driver/lin64/libusb-driver.so 
+export LD_PRELOAD
+
+all: compile
+
+compile: top.bit
+
+program: compile
+	$(IMPACT) -batch $(TOPDIR)/bin/impact-prog.cmd
+
+unlock:
+	-$(IMPACT) -batch $(TOPDIR)/bin/impact-unlock.cmd
+
+$(TOP).bit: $(SRCS) $(UCF) $(TCL)
+	$(XMAKE) build -t $(TOP) -p $(APP) $(SRCS) $(UCF) $(TCL)
+
+ifneq ($(TOP),top)
+top.bit: $(TOP).bit
+	cp $< $@
+endif

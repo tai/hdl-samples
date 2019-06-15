@@ -6,6 +6,5 @@ NET "rst" LOC = "K17" | IOSTANDARD = LVTTL | PULLDOWN ;
 # These four connections are shared with the FX2 connector
 #NET "J4<0>" LOC = "D7" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 6 ;
 #NET "J4<1>" LOC = "C7" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 6 ;
-#NET "tx" LOC = "F8" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 6 ;
-NET "tx" LOC = "E8" | IOSTANDARD = LVTTL | SLEW = SLOW | PULLUP | DRIVE = 6 ;
-
+#NET "J4<2>" LOC = "F8" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 6 ;
+NET "tx" LOC = "E8" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 6 ;
