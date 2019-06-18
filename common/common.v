@@ -1,7 +1,7 @@
 // -*- mode: verilog; coding: utf-8-unix -*-
 
 `ifndef COMMON_V
-`define COMMON_V
+`define COMMON_V 1
 
 // TRUE/FALSE in negative/positive logic
 `define nT 1'b0
