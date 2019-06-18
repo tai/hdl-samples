@@ -6,8 +6,9 @@ proc format_help {} {
 $p - Build with Quartus toolchain
 Usage: $p \[options] \[files...]
 Options:
-  -p, --proj <NAME>: Set project name
-  -t, --top <NAME> : Set top module name
+  -p, --proj <NAME> : Set project name
+  -t, --top <NAME>  : Set top module name
+  -I, --incdir <DIR>: Add include search path
 Example:
   $ $p -p proj -t main *.v *.tcl
 "
@@ -39,7 +40,7 @@ proc show_help {} {
 }
 
 proc parse_args {args} {
-  array set opt {src {} hook {} args {} top "top" udpate 0}
+  array set opt {src {} hook {} args {} inc {} top "top" udpate 0}
 
   set n [llength $args]
   for {set i 0} {$i < $n} {incr i} {
@@ -49,6 +50,7 @@ proc parse_args {args} {
       "^(-h|--help)$" { set opt(help) 1 }
       "^(-t|--top)$"  { incr i; set opt(top) [lindex $args $i] }
       "^(-p|--proj)$" { incr i; set opt(proj) [lindex $args $i] }
+      "^-I$"      { incr i; lappend opt(inc) [lindex $args $i] }
       "^-"        { set opt(err) 1; puts stderr "Unknown arg: $arg" }
       "\.ucf$"    { set opt(ucf) $arg }
       "\.tcl$"    { lappend opt(hook) $arg }

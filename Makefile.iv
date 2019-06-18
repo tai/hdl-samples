@@ -7,6 +7,7 @@ TOPDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 # defaults
 APP = blink
 TOP = top
+BOARD = none
 
 # where to find sources
 VPATH = $(TOPDIR)/$(APP)
@@ -20,7 +21,7 @@ SRCS     = $(filter-out $(SRCS_TB),$(SRCS_ALL))
 TB = $(SRCS_TB:.v=)
 
 # verilog code compiler (Xilinx ISE supports Verilog2001, but not SV)
-VFLAGS = -DCLOCK=50_000_000
+VFLAGS = -DCLOCK=50_000_000 -I$(TOPDIR)/board/$(BOARD)/include
 VCC = iverilog -g2001 -Wall -Wtimescale -I$(TOPDIR)/common $(VFLAGS)
 
 ######################################################################

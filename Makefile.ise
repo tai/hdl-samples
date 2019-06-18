@@ -26,6 +26,7 @@ TCL = \
   $(wildcard $(TOPDIR)/board/$(BOARD)/config/*.tcl) \
   $(wildcard $(TOPDIR)/board/$(BOARD)/$(APP)/config/*.tcl)
 
+XMFLAGS = -I ../board/$(BOARD)/include
 XMAKE = xilinx xtclsh $(TOPDIR)/bin/ise-make
 IMPACT = xilinx impact
 
@@ -43,7 +44,7 @@ unlock:
 	-$(IMPACT) -batch $(TOPDIR)/bin/impact-unlock.cmd
 
 $(TOP).bit: $(SRCS) $(UCF) $(TCL)
-	$(XMAKE) build -t $(TOP) -p $(APP) $(SRCS) $(UCF) $(TCL)
+	$(XMAKE) build -t $(TOP) -p $(APP) $(XMFLAGS) $(SRCS) $(UCF) $(TCL)
 
 ifneq ($(TOP),top)
 top.bit: $(TOP).bit
