@@ -1,0 +1,60 @@
+######################################################################
+# Makefile for GOWIN
+######################################################################
+
+TOPDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+
+# defaults
+APP = blink
+TOP = top
+BOARD = tang-nano
+
+# flags
+INITFLAGS = -I ../board/$(BOARD)/include
+
+# sources
+SRCS_ALL = $(wildcard $(TOPDIR)/$(APP)/*.v)
+SRCS_TB  = $(wildcard $(TOPDIR)/$(APP)/*_tb.v)
+SRCS     = $(filter-out $(SRCS_TB),$(SRCS_ALL))
+
+# setup scripts
+TCLS = \
+  $(wildcard $(TOPDIR)/board/$(BOARD)/config/*.tcl) \
+  $(wildcard $(TOPDIR)/board/$(BOARD)/$(APP)/config/*.tcl)
+
+# config files
+CFGS = \
+  $(wildcard $(TOPDIR)/board/$(BOARD)/config/*.cfg) \
+  $(wildcard $(TOPDIR)/board/$(BOARD)/config/*.opt) \
+  $(wildcard $(TOPDIR)/board/$(BOARD)/$(APP)/*.cst) \
+  $(wildcard $(TOPDIR)/board/$(BOARD)/$(APP)/*.sdc)
+
+# target files
+BITSTREAM = impl/pnr/gowin.fs
+
+# gowin tools
+GWGEN = $(TOPDIR)/bin/gowin-gen
+GWSH  = gowin gw_sh
+
+######################################################################
+
+.SUFFIXES:
+.SUFFIXES: .fs
+
+all: bits
+
+bits: $(BITSTREAM)
+
+# program bistream
+prog: bits
+#	quartus_pgm -z -c 1 -m JTAG $(APP).cdf
+
+test:
+	@echo "Not available. Try with USE=iv"
+
+run.tcl: $(CFGS) $(TCLS)
+	$(GWGEN) $(SRCS) $(CFGS) $(TCLS) > $@
+
+# compile the design, using the setup in configuration script
+$(BITSTREAM): $(SRCS) run.tcl
+	$(GWSH) ./run.tcl
