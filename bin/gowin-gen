@@ -1,0 +1,36 @@
+#!/bin/sh
+
+usage() {
+  local p=$(basename $0)
+  cat <<EOF 1>&2
+$p - Generate Tcl build script for GOWIN
+Usage: $p <cst> <sdc> <cfg> <opt> <tcl> files.v...
+Example:
+  $ $p ../blink/top.v ../blink/blink.v \
+  ../board/tang-nano/blink/* ../board/tang-nano/config/* > run.tcl
+  $ gowin gw_sh run.tcl
+EOF
+  exit 1
+}
+
+run() {
+  local pnr
+
+  while [ $# -gt 0 ]; do
+    local arg=$1
+
+    case "$arg" in
+    *.cst) echo add_file -cst $arg;;
+    *.sdc) echo add_file -sdc $arg;;
+    *.v)   echo add_file -vm  $arg;;
+    *.cfg) echo add_file -cfg $arg;;
+    *.tcl) cat $arg;;
+    *.opt) pnr=$arg;;
+    esac
+    shift
+  done
+  echo run_pnr -opt $pnr
+}
+
+test $# -gt 0 || usage
+run "$@"
